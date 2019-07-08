@@ -52,12 +52,18 @@
     $(document).ready(function(){
       $("#input").keyup(function(){
         if (check_empty()) {
-            return
+            return;
         }
         s = '^' + $('#input').val();
+        len = s.length;
+        if (s[len-1]==' ' || s[len-1]=='^' || s[len-1]=='$') {
+            $("#next").html("");
+            return;
+        }
+
         $.ajax({
             type: 'POST', 
-            url: "http://name-lm.herokuapp.com/next_char", 
+            url: "http://localhost:5000/current_word", 
             crossDomain: true,
             contentType: "application/json; charset=utf-8",
             dataType: "json",
