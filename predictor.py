@@ -33,9 +33,10 @@ class Predictor(metaclass=Singleton):
         with torch.no_grad():
             seq = self.tokenizer.texts_to_sequences([inp])
             seq = torch.tensor(seq)
-            prob, hs = self.model.predict(seq)
+            with torch.no_grad():
+                prob, hs = self.model.predict(seq)
             kprob, kix = prob[0,-1,:].topk(k)
-            res = {self.tokenizer.index_word[i]:float(p) for p,i in zip(kprob.detach().numpy(), kix.detach().numpy())}
+            res = {self.tokenizer.index_word[i]:float(p) for p,i in zip(kprob.numpy(), kix.numpy())}
             # res = {k:res[k] for k in sorted(res, key=res.get, reverse=True)}
             return res
    
@@ -43,7 +44,8 @@ class Predictor(metaclass=Singleton):
         seq = self.tokenizer.texts_to_sequences([inp])
         seq = torch.tensor(seq).long()
         end_token = self.tokenizer.word_index[' ']
-        kseq, kscore = beam_search(seq, self.model, end_token, k, max_len)
+        with torch.no_grad():
+            kseq, kscore = beam_search(seq, self.model, end_token, k, max_len)
         ksent = [seq2text(x, self.tokenizer, end_token) for x in kseq]
 
         kscore = np.exp(kscore)
@@ -52,6 +54,6 @@ class Predictor(metaclass=Singleton):
             sent_len = [len(x) for x in ksent]
             kscore = kscore / sent_len
         
-        res = {inp+sent:score for sent, score in zip(ksent, kscore)}
+        res = {inp[1:]+sent+' ':float(score) for sent, score in zip(ksent, kscore)}
         return res
 
