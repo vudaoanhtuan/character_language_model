@@ -1,6 +1,9 @@
 import torch
+import numpy as np
 
 from model import get_model, load_model, load_vocab
+from beamsearch import beam_search
+from utils import seq2text
 
 class Singleton(type):
     """
@@ -36,3 +39,19 @@ class Predictor(metaclass=Singleton):
             # res = {k:res[k] for k in sorted(res, key=res.get, reverse=True)}
             return res
    
+    def predict_current_word(self, inp, k=5, max_len=10, len_norm=False):
+        seq = self.tokenizer.texts_to_sequences([inp])
+        seq = torch.tensor(seq).long()
+        end_token = self.tokenizer.word_index[' ']
+        kseq, kscore = beam_search(seq, self.model, end_token, k, max_len)
+        ksent = [seq2text(x, self.tokenizer, end_token) for x in kseq]
+
+        kscore = np.exp(kscore)
+
+        if len_norm:
+            sent_len = [len(x) for x in ksent]
+            kscore = kscore / sent_len
+        
+        res = {inp+sent:score for sent, score in zip(ksent, kscore)}
+        return res
+
