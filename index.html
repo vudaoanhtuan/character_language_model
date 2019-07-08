@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <!-- Latest compiled and minified CSS -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.0/css/bootstrap.min.css">
+
+    <!-- jQuery library -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+
+    <!-- Latest compiled JavaScript -->
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.0/js/bootstrap.min.js"></script>
+    <script>
+    function get_text(res) {
+        result = Object.keys(res).map(function(key) {
+          return {key: key, val: res[key]};
+        });
+
+        result = result.sort(function (a, b) {
+            return b.val - a.val;
+        });
+        text = ''
+        for (i=0; i<result.length; i++) {
+            text = text + gen_list_item(result[i].key, result[i].val) + "\n" 
+        }
+
+        text = '<ul class="list-group" id="prob">' + text + '</ul>'
+
+        return text
+    }
+
+    function gen_list_item(key, val) {
+        if (key == ' ') {
+            key = '_ (space)'
+        } else if(key=='$') {
+            key = '$ (end)'
+        }
+        return '<li class="list-group-item">' + key + '<span class="badge">' + Number(val).toFixed(6) + '</span></li>'
+    }
+
+    function check_empty() {
+        s = $('#input').val();
+        if (s.length < 1) {
+            prob = $("#prob");
+            if (prob) {
+                prob.remove();
+            }
+            return 1;
+        }
+        return 0;
+    }
+
+    $(document).ready(function(){
+      $("#input").keyup(function(){
+        if (check_empty()) {
+            return
+        }
+        s = '^' + $('#input').val();
+        $.ajax({
+            type: 'POST', 
+            url: "http://name-lm.herokuapp.com/next_char", 
+            crossDomain: true,
+            contentType: "application/json; charset=utf-8",
+            dataType: "json",
+            data: JSON.stringify({input: s}), 
+            success: function(result){
+                text = get_text(result)
+                $("#next").html(text);
+            }
+        });
+      });
+    });
+    </script>
+</head>
+
+<body class="container" style="width: 50%">
+    <div class="jumbotron card card-image" style="background-image: url(https://mdbootstrap.com/img/Photos/Others/gradient1.jpg);">
+        <div class="text-white text-center py-5 px-4">
+            <h1 class="card-title h1-responsive pt-3 mb-5 font-bold"><strong>Name prediction</strong></h1>  
+        </div>
+    </div>
+
+    <input type="text" id="input" class="form-control">
+    <div id='next'></div>
+</body>
+</html>
